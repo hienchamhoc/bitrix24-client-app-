@@ -1,113 +1,242 @@
-import Image from "next/image";
+"use client"
+import { Box, Button, Card, CardContent, CardHeader, Grid, LinearProgress, List, ListItem, Typography } from "@mui/material";
+import { DataGrid, GridColDef, GridSortModel } from "@mui/x-data-grid";
+import React, { useCallback, useEffect, useState } from "react";
+import {User, UserField } from "./data/user";
+import dayjs from "dayjs";
+import DetailDialog from "./detail";
+import oauthApi from "./api/oauth2";
+import toast from "react-hot-toast";
+import userApi from "./api/user";
+import userFieldApi from "./api/user/field";
+
+interface CellType {
+  row: User
+}
+interface Data {
+  result: User[],
+  total:number,
+  time:any
+}
 
 export default function Home() {
+  const [detailDialog, setDetailDialog] = useState<boolean>(false)
+  const [user, setUser] = useState<User>();
+  const [token, setToken] = useState<string>();
+  const [field,setField] = useState<UserField>()
+  const [data, setData] = useState<Data>();
+  const handleOpenDetail = useCallback(() => {
+    setDetailDialog(true)
+  }, [])
+  const getAccessToken = async ()=>{
+    try {
+      const res = await oauthApi.getAccessToken()
+      setToken(res.data.token)
+    } catch (error) {
+      toast.error("Lấy token không thành công")
+    }
+  }
+  useEffect( ()=>{
+    getAccessToken()
+  },[])
+
+  const getListUser = async ()=>{
+    if(token){
+      const res = await userApi.getList({token:token})
+      setData(res.data)
+    }
+  }
+  const getUserField = async ()=>{
+    if(token){
+      const res = await userFieldApi.getField({token:token})
+      setField(res.data.result)
+    }
+  }
+
+  useEffect(()=>{
+    getUserField()
+    getListUser()
+  },[token])
+
+  var columns: GridColDef[] = [
+    {
+      flex: 0.05,
+      field: 'id',
+      minWidth: 50,
+      headerName: field? field.ID:'',
+      renderCell: ({ row }: CellType) => {
+        return (
+          <Typography>
+            {row.ID}
+          </Typography>
+        )
+      }
+    },
+    {
+      flex: 0.1,
+      field: 'name',
+      minWidth: 100,
+      headerName: field? field.NAME:'',
+      renderCell: ({row}:CellType) => {
+        return <Typography>{row.NAME}</Typography>
+      }
+    },
+    {
+      flex: 0.1,
+      minWidth: 140,
+      field: 'email',
+      headerName: field? field.EMAIL:'',
+      sortable: false,
+      renderCell: ({row}:CellType) => {
+        return <Typography>{row.EMAIL}</Typography>
+      }
+    },
+    {
+      flex: 0.1,
+      minWidth: 100,
+      field: 'active',
+      headerName: field? field.ACTIVE:'',
+      sortable: false,
+      renderCell: ({row}:CellType) => {
+        if(row.ACTIVE){
+          return <Typography>Có</Typography>
+        }else{
+          return <Typography>không</Typography>
+        }
+        
+      }
+    },
+    {
+      flex: 0.1,
+      minWidth: 100,
+      field: 'date_register',
+      headerName: field? field.DATE_REGISTER: '',
+      sortable: false,
+      renderCell: ({row}:CellType) => {
+        return <Typography>{dayjs(row.DATE_REGISTER).format("DD/MM/YYYY")}</Typography>
+      }
+    },
+    {
+      flex: 0.1,
+      minWidth: 100,
+      field: 'last_login',
+      headerName:  field? field.LAST_LOGIN: '',
+      sortable: false,
+      renderCell: ({row}:CellType) => {
+        return <Typography>{dayjs(row.LAST_LOGIN).format("HH:mm DD/MM/YYYY")}</Typography>
+      }
+    },
+  ]
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+    <Box sx={{ m: 2 }} >
+      <Grid container spacing={0} rowGap={4}>
+      <Grid item xs={12}>
+          <Card>
+          {detailDialog ? <DetailDialog field={field} open={detailDialog} user={user!} setOpen={setDetailDialog} /> : null}
+            <CardHeader
+              title={
+                <Grid container>
+                  <Grid item xs={12} sm={10} md={9} lg={10}>
+                    Bài kiểm tra sơ cấp vòng 1
+                  </Grid>
+                  <Grid item xs={6} sm={6} md={3} lg={2}>
+                  </Grid>
+                </Grid>
+              }
+            ></CardHeader>
+          </Card>
+        </Grid>
+        <Grid item xs={12}>
+          <Card>
+            <CardHeader
+              title={
+                <Grid container>
+                  <Grid item xs={12} sm={10} md={9} lg={10}>
+                    Danh sách nhân viên
+                  </Grid>
+                  <Grid item xs={6} sm={6} md={3} lg={2}>
+                    
+                  </Grid>
+                </Grid>
+              }
+              action={
+                <List>
+                <Button variant='contained' onClick={()=>{
+                  getListUser()
+                }}>
+                &nbsp; Refesh
+              </Button>
+              <Button variant='contained' onClick={()=>{
+                if(user){
+                  handleOpenDetail()
+                }
+              }}>
+                &nbsp; View Employee
+              </Button>
+              </List>
+              }
+            ></CardHeader>
+            <CardContent>
+            <DataGrid
+                autoHeight
+                paginationMode='client'
+                slotProps={{
+                  pagination: {
+                    labelRowsPerPage: 'Số bản ghi mỗi trang',
+                    labelDisplayedRows(paginationInfo) {
+                      return (
+                        <Typography>
+                          {paginationInfo.from} - {paginationInfo.to} trên {paginationInfo.count}
+                        </Typography>
+                      )
+                    }
+                  }
+                }}
+                getRowId={(row)=>row.ID}
+                
+                pagination
+                pageSizeOptions={[10, 25, 50]}
+                // paginationModel={paginationModel}
+                // onPaginationModelChange={setPaginationModel}
+                // sortModel={sortModel}
+                // onSortModelChange={newSortModel => setSortModel(newSortModel)}
+                rowHeight={62}
+                sx={{
+                  // disable cell selection style
+                  '.MuiDataGrid-cell:focus': {
+                    outline: 'none'
+                  },
 
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+                  // pointer cursor on ALL rows
+                  '& .MuiDataGrid-row:hover': {
+                    cursor: 'pointer'
+                  }
+                }}
+                hideFooterSelectedRowCount
+                // rowCount={data.total}
+                rows={data ? data.result.filter(user =>user.USER_TYPE === 'employee'): []}
+                columns={columns}
+                // disableRowSelectionOnClick
+                disableColumnSelector
+                disableColumnFilter
+                disableColumnMenu
+                onRowClick={async ({ id }) => {
+                  const userFound: any = data!.result.find((user)=>{
+                    if(user.ID=(id as any)){
+                      return user
+                    }
+                  })
+                  if(userFound){
+                    setUser(userFound)
+                  }
+                }}
+              />
+            </CardContent>
+          </Card>
+        </Grid>
+        
+      </Grid>
+    </Box>
   );
 }
