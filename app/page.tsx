@@ -1,5 +1,5 @@
 "use client"
-import { Box, Button, Card, CardContent, CardHeader, Grid, LinearProgress, List, ListItem, Typography } from "@mui/material";
+import { Box, Button, Card, CardContent, CardHeader, createTheme, Grid, LinearProgress, List, ListItem, responsiveFontSizes, ThemeProvider, Typography, useMediaQuery } from "@mui/material";
 import { DataGrid, GridColDef, GridSortModel } from "@mui/x-data-grid";
 import React, { useCallback, useEffect, useState } from "react";
 import {User, UserField } from "./data/user";
@@ -20,6 +20,17 @@ interface Data {
 }
 
 export default function Home() {
+  let theme = createTheme();
+  theme.typography.h3 = {
+    fontSize: '1.2rem',
+    '@media (min-width:600px)': {
+      fontSize: '1.5rem',
+    },
+    [theme.breakpoints.up('md')]: {
+      fontSize: '2.4rem',
+    },
+  };
+
   const [detailDialog, setDetailDialog] = useState<boolean>(false)
   const [user, setUser] = useState<User>();
   const [token, setToken] = useState<string>();
@@ -57,6 +68,11 @@ export default function Home() {
     getUserField()
     getListUser()
   },[token])
+
+  useEffect(()=>{
+    console.log(data);
+    
+  },[])
 
   var columns: GridColDef[] = [
     {
@@ -129,6 +145,7 @@ export default function Home() {
   ]
 
   return (
+    <ThemeProvider theme={theme}>
     <Box sx={{ m: 2 }} >
       <Grid container spacing={0} rowGap={4}>
       <Grid item xs={12}>
@@ -153,7 +170,7 @@ export default function Home() {
               title={
                 <Grid container>
                   <Grid item xs={12} sm={10} md={9} lg={10}>
-                    Danh sách nhân viên
+                    <Typography >Danh sách nhân viên</Typography>
                   </Grid>
                   <Grid item xs={6} sm={6} md={3} lg={2}>
                     
@@ -161,20 +178,27 @@ export default function Home() {
                 </Grid>
               }
               action={
-                <List>
-                <Button variant='contained' onClick={()=>{
-                  getListUser()
-                }}>
-                &nbsp; Refesh
-              </Button>
-              <Button variant='contained' onClick={()=>{
-                if(user){
-                  handleOpenDetail()
-                }
-              }}>
-                &nbsp; View Employee
-              </Button>
-              </List>
+                <Grid container spacing={3} >
+                  <Grid item md={4} xs={12} >
+                    <Button variant='outlined' color="info"
+                      size={useMediaQuery(theme.breakpoints.down("sm")) ? "small" : "medium"}
+                      onClick={()=>{
+                        getListUser()
+                      }}>
+                      &nbsp; <Typography>Refesh</Typography>
+                    </Button>
+                  </Grid>
+                  <Grid item  md={8} xs={12}>
+                    <Button variant='outlined' size={useMediaQuery(theme.breakpoints.down("sm")) ? "small" : "medium"} 
+                      onClick={()=>{
+                        if(user){
+                          handleOpenDetail()
+                        }
+                      }}>
+                      &nbsp; <Typography>View Employee</Typography>
+                    </Button>
+                  </Grid>
+                </Grid>
               }
             ></CardHeader>
             <CardContent>
@@ -194,7 +218,6 @@ export default function Home() {
                   }
                 }}
                 getRowId={(row)=>row.ID}
-                
                 pagination
                 pageSizeOptions={[10, 25, 50]}
                 // paginationModel={paginationModel}
@@ -218,15 +241,11 @@ export default function Home() {
                 rows={data ? data.result.filter(user =>user.USER_TYPE === 'employee'): []}
                 columns={columns}
                 // disableRowSelectionOnClick
-                disableColumnSelector
+                // disableColumnSelector
                 disableColumnFilter
                 disableColumnMenu
-                onRowClick={async ({ id }) => {
-                  const userFound: any = data!.result.find((user)=>{
-                    if(user.ID=(id as any)){
-                      return user
-                    }
-                  })
+                onRowClick={ ({ id }) => {
+                  const userFound = data!.result.find((element)=> element.ID === (id as any))
                   if(userFound){
                     setUser(userFound)
                   }
@@ -238,5 +257,6 @@ export default function Home() {
         
       </Grid>
     </Box>
+    </ThemeProvider>
   );
 }
